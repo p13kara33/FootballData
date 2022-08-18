@@ -67,25 +67,10 @@ def expected_goals_format(games, team_name):
     # Creating the Xg columns
     team_df["xG_diff_pg"] = team_df.loc[:, "xG-F"] - team_df.loc[:, "xG-A"]
     team_df["xG-F_total"] = team_df.loc[:, "xG-F"].cumsum(axis=0)
-    # The average needs to be changed!! But use the rolling().mean() for capturing the form
-    team_df["xG-F_average"] = team_df.loc[:, "xG-F"].rolling(window=window_size).mean()
     team_df["xG-A_total"] = team_df.loc[:, "xG-A"].cumsum(axis=0)
-    # The average needs to be changed!! Maybe you will need to use the rolling mean with a window of two look below for moving_avg func
-    team_df["xG-A_average"] = team_df.loc[:, "xG-A"].mean(axis=0)
     team_df["xG_diff_total"] = team_df.loc[:, "xG_diff_pg"].cumsum(axis=0)
 
     return team_df
-
-
-def moving_avg(games, team_name):
-    """
-    Get the moving avg as rolling().mean() between the xG and the rolling().mean() col itself
-    using dynamic window_size ;)
-
-    The first one should always be NaN
-    """
-
-    team_df = expected_goals_format(games, team_name)
 
 
 def matches_to_teams_conversion(games):
@@ -98,6 +83,30 @@ def matches_to_teams_conversion(games):
         )
 
     return teams_performance
+
+
+def moving_avg(games):
+    """
+    The first one should always be same as the total xG
+    """
+
+    teams_performance = matches_to_teams_conversion(games)
+    game_weeks = np.array(games["Game Week"].unique())
+    for team in teams_performance:
+        team_df = teams_performance[team]
+        xg_for = np.array(team_df["xG-F_total"])
+        xg_against = np.array(team_df["xG-A_total"])
+        xg_for_mavg = np.zeros_like(xg_for)
+        xg_against_mavg = np.zeros_like(xg_against)
+
+        for game_week in game_weeks:
+            xg_for_mavg[game_week - 1] = xg_for[game_week - 1] / game_week
+            xg_against_mavg[game_week - 1] = xg_against[game_week - 1] / game_week
+
+        team_df["xG-F_Moving_average"] = xg_for_mavg
+        team_df["xG-A_average"] = xg_against_mavg
+
+        return teams_performance
 
 
 def game_s_xg_distance(games):
