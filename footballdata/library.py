@@ -9,6 +9,13 @@ from settings import (
 )
 
 
+def get_squad_as_index(df):
+    index = np.array(df["Unnamed: 0_level_0", "Squad"])
+    df.index = index
+
+    return df
+
+
 def get_season_years(year):
     n_year = year + 1
     return f"{year}-{n_year}"
@@ -52,22 +59,55 @@ def edit_home_away_table(home_away_table):
     return home_away_stats
 
 
-def _edit_opp_df(squad_opp_std_stats):
+def remove_unnamed_cols(df):
+
+    cols = [
+        col
+        for col in df.columns.get_level_values(0).unique()
+        if not col.startswith("Unnamed:")
+    ]
+
+    return df[cols]
+
+
+def _edit_opp_df(df_opp):
 
     # Removing the "vs " from the Opposition squad col
-    squad_opp_std_stats["Unnamed: 0_level_0", "Squad"] = squad_opp_std_stats[
-        "Unnamed: 0_level_0", "Squad"
-    ].apply(lambda x: x.strip("vs "))
+    df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
+        lambda x: x.strip("vs ")
+    )
     # Changing the col names of the opp df to have the "_Opp" suffix
     column_dict = {
-        col_name: f"{col_name}_Opp"
-        for col_name in squad_opp_std_stats.columns.get_level_values(1)
+        col_name: f"{col_name}_Opp" for col_name in df_opp.columns.get_level_values(1)
     }
     del column_dict["Squad"]
     del column_dict["# Pl"]
-    squad_opp_std_stats = squad_opp_std_stats.rename(columns=column_dict)
+    df_opp = df_opp.rename(columns=column_dict)
 
-    return squad_opp_std_stats
+    df_opp = get_squad_as_index(df_opp)
+    # df_opp = remove_unnamed_cols(df_opp)
+
+    return df_opp
+
+
+def edit_opp_df(df_opp):
+
+    # Removing the "vs " from the Opposition squad col
+    df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
+        lambda x: x.strip("vs ")
+    )
+    # Changing the col names of the opp df to have the "_Opp" suffix
+    column_dict = {
+        col_name: f"{col_name}_Opp" for col_name in df_opp.columns.get_level_values(1)
+    }
+    del column_dict["Squad"]
+    del column_dict["# Pl"]
+    df_opp = df_opp.rename(columns=column_dict)
+
+    df_opp = get_squad_as_index(df_opp)
+    df_opp = remove_unnamed_cols(df_opp)
+
+    return df_opp
 
 
 def edit_squad_stats(squad_std_stats, squad_opp_std_stats):
@@ -75,7 +115,7 @@ def edit_squad_stats(squad_std_stats, squad_opp_std_stats):
     Editing and merging the two dfs into one.
     """
 
-    squad_opp_std_stats = _edit_opp_df(squad_opp_std_stats)
+    squad_opp_std_stats = edit_opp_df(squad_opp_std_stats)
 
     # Dropping the first level of the cols in both dfs
     squad_std_stats = squad_std_stats.droplevel(level=0, axis=1)
@@ -183,11 +223,11 @@ def edit_gk_talbes(gk_df, gk_opp_df):
     Taking as an input the 2 gk tables and generating 1
 
     - Gk Overall:
-        :SoTA: Shot on Target Against 
-        :Saves: Saves 
+        :SoTA: Shot on Target Against
+        :Saves: Saves
         :Save%: Save percentage
         :CS: Clean Sheets
-        :CS%: Clean Sheets percentage 
+        :CS%: Clean Sheets percentage
         :PKA:
         :PKsv: Penalty Kicks Saved
         ::
@@ -200,17 +240,20 @@ def edit_gk_talbes(gk_df, gk_opp_df):
         :PKsv_Opp: Penalty Saved by Opposition Gks
         :Save%_Opp: Penalty Saved percentage by Opposition Gks
     """
-    index = np.array(gk_df["Unnamed: 0_level_0", "Squad"])
-    for df in [gk_df, gk_opp_df]:
-        df.index = index
+
+    gk_df = get_squad_as_index(gk_df)
+    gk_opp_df = get_squad_as_index(gk_opp_df)
 
     del_cols = ["W", "D", "L", "GA", "GA90", "PKatt", "PKA", "PKm"]
-    col_0 = [["Performance", "Penalty Kicks"], [ "Goals", "Expected", "Launched", "Passes", "Goal Kicks", "Crosses", "Sweeper"]]
+    col_0 = [
+        ["Performance", "Penalty Kicks"],
+        ["Goals", "Expected", "Launched", "Passes", "Goal Kicks", "Crosses", "Sweeper"],
+    ]
     gk_df = gk_df[col_0[0]]
     gk_df = gk_df.droplevel(0, axis=1)
     gk_df.drop(columns=del_cols, inplace=True)
 
-    gk_opp_df = _edit_opp_df(gk_opp_df)
+    gk_opp_df = edit_opp_df(gk_opp_df)
     gk_opp_df = gk_opp_df[col_0[0]]
     gk_opp_df = gk_opp_df.droplevel(0, axis=1)
     gk_opp_df.drop(columns=[f"{col}_Opp" for col in del_cols], inplace=True)
@@ -232,9 +275,10 @@ def get_single_season_league_data(country, tier, year):
     # Dictionary of 4 dfs. Home, Away, Home - Away, Home / Away stats
     home_away = edit_home_away_table(leagues_list[1].copy())
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
-    std_squads_stats = edit_standard_stats_table(leagues_list[2].copy(), leagues_list[3].copy())
+    std_squads_stats = edit_standard_stats_table(
+        leagues_list[2].copy(), leagues_list[3].copy()
+    )
     gk_overall = edit_gk_talbes(leagues_list[4].copy(), leagues_list[5].copy())
     # TODO: Advanced Gk
 
-    
     return leagues_list
