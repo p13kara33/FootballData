@@ -70,27 +70,7 @@ def remove_unnamed_cols(df):
     return df[cols]
 
 
-def _edit_opp_df(df_opp):
-
-    # Removing the "vs " from the Opposition squad col
-    df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
-        lambda x: x.strip("vs ")
-    )
-    # Changing the col names of the opp df to have the "_Opp" suffix
-    column_dict = {
-        col_name: f"{col_name}_Opp" for col_name in df_opp.columns.get_level_values(1)
-    }
-    del column_dict["Squad"]
-    del column_dict["# Pl"]
-    df_opp = df_opp.rename(columns=column_dict)
-
-    df_opp = get_squad_as_index(df_opp)
-    # df_opp = remove_unnamed_cols(df_opp)
-
-    return df_opp
-
-
-def edit_opp_df(df_opp):
+def clean_opp_df(df_opp):
 
     # Removing the "vs " from the Opposition squad col
     df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
@@ -110,12 +90,25 @@ def edit_opp_df(df_opp):
     return df_opp
 
 
+def clean_main_df(df):
+
+    df = get_squad_as_index(df)
+    df = remove_unnamed_cols(df)
+
+    return df
+
+
+def merge_dfs(df, df_opp):
+
+    return clean_main_df(df.copy()).join(clean_opp_df(df_opp.copy()))
+
+
 def edit_squad_stats(squad_std_stats, squad_opp_std_stats):
     """Getting two dfs one with the teams std stats and one with their opposition.
     Editing and merging the two dfs into one.
     """
 
-    squad_opp_std_stats = edit_opp_df(squad_opp_std_stats)
+    squad_opp_std_stats = clean_opp_df(squad_opp_std_stats)
 
     # Dropping the first level of the cols in both dfs
     squad_std_stats = squad_std_stats.droplevel(level=0, axis=1)
@@ -194,7 +187,20 @@ def edit_standard_stats_table(squad_std_stats, squad_opp_std_stats):
 
     """
     squad_seasonal_stats = {}
-    squad_opp_std_stats = _edit_opp_df(squad_opp_std_stats.copy())
+    # Removing the "vs " from the Opposition squad col
+    squad_opp_std_stats["Unnamed: 0_level_0", "Squad"] = squad_opp_std_stats[
+        "Unnamed: 0_level_0", "Squad"
+    ].apply(lambda x: x.strip("vs "))
+    # Changing the col names of the opp df to have the "_Opp" suffix
+    column_dict = {
+        col_name: f"{col_name}_Opp"
+        for col_name in squad_opp_std_stats.columns.get_level_values(1)
+    }
+    del column_dict["Squad"]
+    del column_dict["# Pl"]
+    squad_opp_std_stats = squad_opp_std_stats.rename(columns=column_dict)
+
+    squad_opp_std_stats = get_squad_as_index(squad_opp_std_stats)
 
     index = np.array(squad_std_stats["Unnamed: 0_level_0", "Squad"])
     unnamed_cols = [
@@ -241,8 +247,8 @@ def edit_gk_talbes(gk_df, gk_opp_df):
         :Save%_Opp: Penalty Saved percentage by Opposition Gks
     """
 
-    gk_df = get_squad_as_index(gk_df)
-    gk_opp_df = get_squad_as_index(gk_opp_df)
+    gk_df = get_squad_as_index(gk_df.copy())
+    gk_opp_df = get_squad_as_index(gk_opp_df.copy())
 
     del_cols = ["W", "D", "L", "GA", "GA90", "PKatt", "PKA", "PKm"]
     col_0 = [
@@ -253,7 +259,7 @@ def edit_gk_talbes(gk_df, gk_opp_df):
     gk_df = gk_df.droplevel(0, axis=1)
     gk_df.drop(columns=del_cols, inplace=True)
 
-    gk_opp_df = edit_opp_df(gk_opp_df)
+    gk_opp_df = clean_opp_df(gk_opp_df)
     gk_opp_df = gk_opp_df[col_0[0]]
     gk_opp_df = gk_opp_df.droplevel(0, axis=1)
     gk_opp_df.drop(columns=[f"{col}_Opp" for col in del_cols], inplace=True)
@@ -278,7 +284,31 @@ def get_single_season_league_data(country, tier, year):
     std_squads_stats = edit_standard_stats_table(
         leagues_list[2].copy(), leagues_list[3].copy()
     )
-    gk_overall = edit_gk_talbes(leagues_list[4].copy(), leagues_list[5].copy())
+    gk_overall = edit_gk_talbes(leagues_list[4], leagues_list[5])
     # TODO: Advanced Gk
+    """
+    Squad Shooting
+    - Standard shooting ->
+        :Gls: Goals
+        :Sht: Total Number of Shots
+        :SoT: Total Number of Shots on Target 
+        :SoT%: Percentage of Shots on Target
+        :Sh/90: Shots per 90'
+        :G/Sh: Goal per Shot
+        :G/SoT: Goal per Shot on Target
+        :Dist: Average distance in yards, from goal of all shots taken
+        :FK: Shots from Free Kicks
+        :PK: Goals from Penalty Kicks  (TBR!)
+        :PKatt: PKs Attempted          (TBR!)
+    - Expected shooting stats ->
+        :xG: Expected Goals 
+        :npxG: Non penalty xG
+        :npxG/Sh: Non Penalty xG per shot
+        :G-xG: Goals minus xG
+        :np:G-xG:Non Penalty Goals minus Non Penalty xG
+
+    """
+
+    shooting_dfs = merge_dfs(leagues_list[8], leagues_list[9])
 
     return leagues_list
