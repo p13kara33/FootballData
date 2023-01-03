@@ -23,7 +23,7 @@ for country in leagues:
         print(f"Getting player data for {national_divisions[tier]['name']}")
 
         while year < 2023:
-            url = f"https://fbref.com/en/comps/{tier_id}/{year}-{year+1}/wages/"
+            url = f"https://fbref.com/en/comps/{tier_id}/{year}-{year+1}/stats/"
             year += 1
             html_document = getHTMLdocument(url)
             soup = BeautifulSoup(html_document, "html.parser")
