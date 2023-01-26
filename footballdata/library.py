@@ -308,7 +308,6 @@ def get_single_season_league_data(country, tier, year):
         :np:G-xG:Non Penalty Goals minus Non Penalty xG
 
     """
-
     shooting_dfs = merge_dfs(leagues_list[8], leagues_list[9])
 
     return leagues_list
