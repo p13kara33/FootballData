@@ -1,4 +1,5 @@
 # Helper functions
+import re
 from calendar import c
 import numpy as np
 import pandas as pd
@@ -61,13 +62,32 @@ def edit_home_away_table(home_away_table):
 
 def remove_unnamed_cols(df):
 
+    to_be_removed = [
+        "Unnamed: 0_level_0",
+        "Unnamed: 1_level_0",
+        "Unnamed: 2_level_0",
+        "Unnamed: 3_level_0",
+    ]
+    remove_those = "|".join(to_be_removed)
+
     cols = [
         col
         for col in df.columns.get_level_values(0).unique()
-        if not col.startswith("Unnamed:")
+        if col not in to_be_removed
     ]
 
-    return df[cols]
+    df = df[cols]
+
+    cols_to_rename = [
+        col
+        for col in df.columns.get_level_values(0).unique()
+        if col.startswith("Unnamed:")
+    ]
+
+    # Rename the columns
+    df = df.rename(columns={col: "Details" for col in cols_to_rename})
+
+    return df
 
 
 def clean_opp_df(df_opp):
