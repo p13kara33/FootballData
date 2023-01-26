@@ -204,7 +204,6 @@ def edit_standard_stats_table(squad_std_stats, squad_opp_std_stats):
         :npxG: Expected Non Penalty Goals
         :xAG: Expected Assists
         :npxG+xAG: Expected Non Penalty Goals and Expected Assists
-
     """
     squad_seasonal_stats = {}
     # Removing the "vs " from the Opposition squad col
@@ -297,13 +296,89 @@ def get_single_season_league_data(country, tier, year):
     leagues_list = pd.read_html(LEAGUE_URL.format(id, season))
 
     # Edit original tables
+    # TODO: Add Columns documentation
     regular_season = edit_regular_season_table(leagues_list[0].copy())
     # Dictionary of 4 dfs. Home, Away, Home - Away, Home / Away stats
+    # TODO: Add Columns documentation
     home_away = edit_home_away_table(leagues_list[1].copy())
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
+    """
+    - Standard
+        Df standard stats
+        :#Pl: Number of Players used in games
+        :Age: Age is weighted by minutes played
+        :Age_Opp: Age of the opposition teams
+        :Poss: Possession, calculated as the % of passes attempted
+        :Poss_Opp: The % of passes attempted by the opposition teams
+    - Performance
+        DF Performance
+        :Gls_Opp: Goals conceded
+        :Ast_Opp: Assists allowed
+        :G-PK_Opp: No penalty goals conceded
+        :PK_Opp:  Goals from Penalty conceded
+        :PKatt_Opp: Penalty Kicks attempted by opposition teams
+        :CrdY_Opp: Yellow Cards the opposition received
+        :CrdR_Opp: Red Cards the opposition received
+        :Gls: Goals scored
+        :Ast: Assists
+        :G-PK: Non Penalty Goals (Total Goals - Pk)
+        :PK: Penalty Goals
+        :PKatt: Penalty kicks attempted
+        :CrdY: Yellow Cards
+        :CrdR: Red Cards
+    - Per 90 Minutes'
+        :Gls_Opp: Goals allowed per 90'
+        :Ast_Opp: Assists allowed per 90'
+        :G+A_Opp: Goals and Assists allowed per 90'
+        :G-PK_Opp: Non Penalty Goals allowed per 90'
+        :G+A-PK_Opp: Non Penalty Goals and assists allowed per 90'
+        :xG_Opp: Expected Goals of opposition allowed per 90'
+        :xAG_Opp: Expected Assists of opposition allowed per 90'
+        :xG+xAG_Opp: Expected Goals and expected Assists of opposition allowed per 90'
+        :npxG_Opp: Non penalty Expected Goals of opposition allowed per 90'
+        :npxG+xAG_Opp: Non Penalty Expected Goals and Expected Assists of opposition allowed by 90'
+        :Gls: Goals scored per 90'
+        :Ast: Assists made per 90'
+        :G+A: Goal and Assists per 90'
+        :G-PK: Non Penalty Goals per 90'
+        :G+A-PK: Non Penalty Goals and Assists per 90'
+        :xG: Expected Goals per 90'
+        :xAG: Expected Assists per 90'
+        :xG+xAG: Expected Goals and Expected Assists per 90'
+        :npxG: Expected Non Penalty Goals per 90'
+        :npxG+xAG: Expected Non Penalty Goals and Expected Assists per 90'
+    - Expected
+        :xG_Opp: Expected Goals allowed
+        :npxG_Opp: Expected Non Penalty Goals allowed
+        :xAG_Opp: Expected Assists allowed
+        :npxG+xAG_Opp: Expected Non Penalty Goals and Expected Assists allowed
+        :xG: Expected Goals
+        :npxG: Expected Non Penalty Goals
+        :xAG: Expected Assists
+        :npxG+xAG: Expected Non Penalty Goals and Expected Assists"""
     std_squads_stats = edit_standard_stats_table(
         leagues_list[2].copy(), leagues_list[3].copy()
     )
+    # GoalKeeping General Stats
+    """
+    - Gk Overall:
+        :SoTA: Shot on Target Against
+        :Saves: Saves
+        :Save%: Save percentage
+        :CS: Clean Sheets
+        :CS%: Clean Sheets percentage
+        :PKA:
+        :PKsv: Penalty Kicks Saved
+        ::
+        :Save%: Penalty Save Percentage
+        :SoTA_Opp: Shot on Target Against of Opposition Gks
+        :Saves_Opp: Saves of Opposition Gks
+        :Save%_Opp: Save Percentage of Opposition Gks
+        :CS_Opp: Clean sheets of Opposition Gks
+        :CS%_Opp: Clean sheets percentage of Opposition Gks
+        :PKsv_Opp: Penalty Saved by Opposition Gks
+        :Save%_Opp: Penalty Saved percentage by Opposition Gks
+    """
     gk_overall = edit_gk_talbes(leagues_list[4], leagues_list[5])
     # TODO: Advanced Gk
     """
@@ -329,5 +404,45 @@ def get_single_season_league_data(country, tier, year):
 
     """
     shooting_dfs = merge_dfs(leagues_list[8], leagues_list[9])
+    # Squad Passing
+    """
+    Squad Passing
+    - Total ->
+        :Cmp: Passes Completed
+        :Att: Passes Attempted
+        :Cmp%: Completion Percentage
+        :TotDist: Total distance in Yards that completed passes have traveled in any direction
+        :PrgDist: Progressive distance: Total distance, in yards, that completed passes have 
+                traveled towards the opponent's goal. 
+                Note: Passes away from opponent's goal are counted as zero progressive yards.
+    - Short Passes between 5-15 yards->
+        :Cmp: Short Passes Completed
+        :Att: Passes Attempted
+        :Cmp%: Completion Percentage
+    - Medium  Passes between 15 - 30 yards->
+        :Cmp: Short Passes Completed
+        :Att: Passes Attempted
+        :Cmp%: Completion Percentage
+    - Long Passes > 30 yards->
+        :Cmp: Short Passes Completed
+        :Att: Passes Attempted
+        :Cmp%: Completion Percentage
+    - Advanced_Passing ->
+        :Ast: Assists
+        :xAG: Expected Assisted Goals
+        :xA: The likelihood each completed pass becomes a goal assists given 
+            the pass type, phase of play, location and distance. 
+        :A-xAG: Assists - Expected Assisted Goals
+        :KP: Key Passes: Passes that directly lead to a shot (assisted shots)
+        :1/3: Completed passes that enter the 1/3 of the pitch closest to the goal
+        :PPA: Completed passes into the 18-yard box (not including set pieces)
+        :CrsPA: Completed crosses into the 18-yard box (not including set pieces)
+        :Prog: Progressive Passes: Completed passes that move the ball towards the 
+            opponent's goal at least 10 yards from its furthest point in the last 
+            six passes, or any completed pass into the penalty area. 
+            Excludes passes from the defending 40% of the pitch
+    """
+    squad_passing_df = merge_dfs(leagues_list[10], leagues_list[11])
+    squad_passing_df.rename(columns={"Details": "Advanced_Passing"}, inplace=True)
 
     return leagues_list
