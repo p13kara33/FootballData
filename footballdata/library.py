@@ -24,6 +24,7 @@ def get_season_years(year):
 
 def edit_regular_season_table(regular_season_table):
 
+    regular_season_table = regular_season_table.copy()
     # Top Team Scorer --> Most Goals (scored by a player)
     regular_season_table["M_G_Indv"] = regular_season_table["Top Team Scorer"].apply(
         lambda val: val.split("-")[-1]
@@ -37,6 +38,7 @@ def edit_regular_season_table(regular_season_table):
 
 def edit_home_away_table(home_away_table):
 
+    home_away_table = home_away_table.copy()
     squads = home_away_table["Unnamed: 1_level_0", "Squad"]
     index = pd.MultiIndex.from_arrays(
         [np.arange(1, 21), np.array(squads)], names=["Rk", "Squads"]
@@ -205,6 +207,8 @@ def edit_standard_stats_table(squad_std_stats, squad_opp_std_stats):
         :xAG: Expected Assists
         :npxG+xAG: Expected Non Penalty Goals and Expected Assists
     """
+    squad_std_stats = squad_std_stats.copy()
+    squad_opp_std_stats = squad_opp_std_stats.copy()
     squad_seasonal_stats = {}
     # Removing the "vs " from the Opposition squad col
     squad_opp_std_stats["Unnamed: 0_level_0", "Squad"] = squad_opp_std_stats[
@@ -297,10 +301,10 @@ def get_single_season_league_data(country, tier, year):
 
     # Edit original tables
     # TODO: Add Columns documentation
-    regular_season = edit_regular_season_table(leagues_list[0].copy())
+    regular_season = edit_regular_season_table(leagues_list[0])
     # Dictionary of 4 dfs. Home, Away, Home - Away, Home / Away stats
     # TODO: Add Columns documentation
-    home_away = edit_home_away_table(leagues_list[1].copy())
+    home_away = edit_home_away_table(leagues_list[1])
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
     """
     - Standard
@@ -356,9 +360,7 @@ def get_single_season_league_data(country, tier, year):
         :npxG: Expected Non Penalty Goals
         :xAG: Expected Assists
         :npxG+xAG: Expected Non Penalty Goals and Expected Assists"""
-    std_squads_stats = edit_standard_stats_table(
-        leagues_list[2].copy(), leagues_list[3].copy()
-    )
+    std_squads_stats = edit_standard_stats_table(leagues_list[2], leagues_list[3])
     # GoalKeeping General Stats
     """
     - Gk Overall:
