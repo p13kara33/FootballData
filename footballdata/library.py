@@ -70,24 +70,25 @@ def remove_unnamed_cols(df):
         "Unnamed: 2_level_0",
         "Unnamed: 3_level_0",
     ]
-    remove_those = "|".join(to_be_removed)
-
+    cols_to_rename = [col for col in df.columns.get_level_values(1) if " " in col]
+    cols_to_rename.extend([col for col in df.columns.get_level_values(0) if " " in col])
+    # Removing first Unnamed cols
     cols = [
         col
         for col in df.columns.get_level_values(0).unique()
         if col not in to_be_removed
     ]
-
     df = df[cols]
 
-    cols_to_rename = [
+    unnamed_to_rename = [
         col
         for col in df.columns.get_level_values(0).unique()
         if col.startswith("Unnamed:")
     ]
 
     # Rename the columns
-    df = df.rename(columns={col: "Details" for col in cols_to_rename})
+    df = df.rename(columns={col: "Details" for col in unnamed_to_rename})
+    df = df.rename(columns={col: col.replace(" ", "_") for col in cols_to_rename})
 
     return df
 
@@ -508,7 +509,7 @@ def get_single_season_league_data(country, tier, year):
         "gk_overall": gk_overall,
         "shooting_data": shooting_dfs,
         "passing_data": squad_passing_df,
-        "pass_types_data": squad_pass_type_df,,
-
+        "pass_types_data": squad_pass_type_df,
+        "gca_data": squad_goal_shot_creation_df,
     }
     return seasons_data
