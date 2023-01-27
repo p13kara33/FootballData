@@ -307,14 +307,14 @@ def get_single_season_league_data(country, tier, year):
     home_away = edit_home_away_table(leagues_list[1])
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
     """
-    - Standard
+    - Standard  ->
         Df standard stats
         :#Pl: Number of Players used in games
         :Age: Age is weighted by minutes played
         :Age_Opp: Age of the opposition teams
         :Poss: Possession, calculated as the % of passes attempted
         :Poss_Opp: The % of passes attempted by the opposition teams
-    - Performance
+    - Performance  ->
         DF Performance
         :Gls_Opp: Goals conceded
         :Ast_Opp: Assists allowed
@@ -330,7 +330,7 @@ def get_single_season_league_data(country, tier, year):
         :PKatt: Penalty kicks attempted
         :CrdY: Yellow Cards
         :CrdR: Red Cards
-    - Per 90 Minutes'
+    - Per 90 Minutes'  ->
         :Gls_Opp: Goals allowed per 90'
         :Ast_Opp: Assists allowed per 90'
         :G+A_Opp: Goals and Assists allowed per 90'
@@ -351,7 +351,7 @@ def get_single_season_league_data(country, tier, year):
         :xG+xAG: Expected Goals and Expected Assists per 90'
         :npxG: Expected Non Penalty Goals per 90'
         :npxG+xAG: Expected Non Penalty Goals and Expected Assists per 90'
-    - Expected
+    - Expected  ->
         :xG_Opp: Expected Goals allowed
         :npxG_Opp: Expected Non Penalty Goals allowed
         :xAG_Opp: Expected Assists allowed
@@ -363,7 +363,7 @@ def get_single_season_league_data(country, tier, year):
     std_squads_stats = edit_standard_stats_table(leagues_list[2], leagues_list[3])
     # GoalKeeping General Stats
     """
-    - Gk Overall:
+    - Gk Overall  ->:
         :SoTA: Shot on Target Against
         :Saves: Saves
         :Save%: Save percentage
@@ -417,15 +417,15 @@ def get_single_season_league_data(country, tier, year):
         :PrgDist: Progressive distance: Total distance, in yards, that completed passes have 
                 traveled towards the opponent's goal. 
                 Note: Passes away from opponent's goal are counted as zero progressive yards.
-    - Short Passes between 5-15 yards->
+    - Short Passes between 5-15 yards ->
         :Cmp: Short Passes Completed
         :Att: Passes Attempted
         :Cmp%: Completion Percentage
-    - Medium  Passes between 15 - 30 yards->
+    - Medium  Passes between 15 - 30 yards ->
         :Cmp: Short Passes Completed
         :Att: Passes Attempted
         :Cmp%: Completion Percentage
-    - Long Passes > 30 yards->
+    - Long Passes > 30 yards ->
         :Cmp: Short Passes Completed
         :Att: Passes Attempted
         :Cmp%: Completion Percentage
@@ -446,5 +446,69 @@ def get_single_season_league_data(country, tier, year):
     """
     squad_passing_df = merge_dfs(leagues_list[10], leagues_list[11])
     squad_passing_df.rename(columns={"Details": "Advanced_Passing"}, inplace=True)
+    # Squad Passing Type
+    """
+    Pass Types
+    - Total ->
+        :Live: Live-Ball Passes (In play)
+        :Dead: Dead-Ball Passes (From Fk, Ck, Kick Offs, Throw ins, and Goal Kicks)
+        :FK: Passes from Free kicks
+        :TB: Passes sent between the back defenders into open space.
+        :Sw: Passes that traveled more than 40 yards of the width of the pitch
+        :Crs: Crosses 
+        :TI:Throw-ins Taken
+        :CK: Corner Kicks
+    -   Corner Kicks ->
+        :In: In-swinging Corner Kicks 
+        :Out: Out-swinging Corner Kicks
+        :Str: Straight Corner Kicks
+    - Outcomes ->
+        :Cmp:  Passes Completed
+        :Off: Offsides
+        :Blocks: Blocked by the opponent who was standing in the path of the pass
+    """
+    squad_pass_type_df = merge_dfs(leagues_list[12], leagues_list[13])
+    # Squad Goal and Shot Creation
+    """
+    Goal And Shot Creation
+    - SCA --> 
+    (Shot-Creation Actions)
+        :SCA: Shot-Creating Actions: The two offensive actions directly leading
+            to a shot, such as passes, dribbles and drawing fouls. 
+            Note: A single player can receive credit for multiple actions 
+            and the shot-taker can also receive credit.
+        :SCA90: Shot Creating Action per 90'
+    - SCA Types -->
+        :PassLive: Completed live-ball passes that lead to a shot attempt
+        :PassDead: Completed dead-ball passes that lead to a shot attempt
+        :Drib: Successful dribbles that lead to a shot attempt
+        :Sh: Shots that lead to another shot attempt
+        :Fld: Fouls Drawn that lead to a shot attempt
+        :Def: Defensive actions that lead to a shot attempt
+    - GCA -->
+    (Goal-Creating Actions)
+        :GCA: Goal-Creating Actions: The two offensive actions directly leading 
+            to a goal, such as passes, dribbles and drawing fouls. 
+            Note: A single player can receive credit for multiple actions 
+            and the shot-taker can also receive credit.
+        :GCA90: Goal-Creating Actions per 90'
+    - GCA Types -->
+        :PassLive: Completed live-ball passes that lead to a goal
+        :PassDead: Completed dead-ball passes that lead to a goal
+        :Drib: Successful dribbles that lead to a goal
+        :Sh: Shots that lead to another shot attempt
+        :Fld: Fouls Drawn that lead to a goal
+        :Def: Defensive actions that lead to a goal
+"""
+    squad_goal_shot_creation_df = merge_dfs(leagues_list[14], leagues_list[15])
+    seasons_data = {
+        "standings_table": regular_season,
+        "home_away": home_away,
+        "standard_data": std_squads_stats,
+        "gk_overall": gk_overall,
+        "shooting_data": shooting_dfs,
+        "passing_data": squad_passing_df,
+        "pass_types_data": squad_pass_type_df,,
 
-    return leagues_list
+    }
+    return seasons_data

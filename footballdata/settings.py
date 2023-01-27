@@ -102,6 +102,9 @@ leagues = {
 #     "birth_year": int(birth_year),
 # }
 
+# TODO: Get the URL
+# TODO: Create career dictionary
+
 players = {
     "Nabil-Abidallah": {
         "id": "e32b9fc3",
