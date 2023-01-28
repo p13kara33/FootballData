@@ -500,6 +500,32 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Def: Defensive actions that lead to a goal
 """
     squad_goal_shot_creation_df = merge_dfs(leagues_list[14], leagues_list[15])
+    # Squad Defending
+    """
+    Defensive Actions
+    - Tackles -->
+        :Tkl: Number of players tackles 
+        :Tkl": Tackles that led to possession
+        :Def_3rd: Tackles in defensive third
+        :Mid_3rd: Tackles in middle third
+        :Att_3rd: Tackles in attacking third
+    - Vs_Dribbles -->
+        :Tkl: Number of Dribbles tackled
+        :Att: Number of time dribbled past plus number of tackles
+        :Tkl%: Percentage of successfully tackled dribbles
+        :Past: Number of times dribbled past by an opposing player
+    - Blocks -->
+        :Blocks: Number of times the ball was block by standing in its path
+        :Sh: Number of blocked shots 
+        :Pass: Number of blocked passes
+    - Advanced_Defending -->
+        :Int: Interceptions
+        :Tkl+Int: Number of Tackles and Interceptions
+        :Clr: Clearances
+        :Err: Mistakes leading to an opponent's shot
+    """
+    squad_defensive_actions_df = merge_dfs(leagues_list[16], leagues_list[17])
+    squad_defensive_actions_df.rename(columns={"Details": "Advanced_Defending"}, inplace=True)
     seasons_data = {
         "standings_table": regular_season,
         "home_away": home_away,
@@ -509,5 +535,6 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         "passing_data": squad_passing_df,
         "pass_types_data": squad_pass_type_df,
         "gca_data": squad_goal_shot_creation_df,
+        "defensive_actions": squad_defensive_actions_df,
     }
     return seasons_data
