@@ -1,6 +1,4 @@
 # Helper functions
-import re
-from calendar import c
 import numpy as np
 import pandas as pd
 
@@ -10,19 +8,19 @@ from settings import (
 )
 
 
-def get_squad_as_index(df):
+def get_squad_as_index(df: pd.DataFrame) -> pd.DataFrame:
     index = np.array(df["Unnamed: 0_level_0", "Squad"])
     df.index = index
 
     return df
 
 
-def get_season_years(year):
+def get_season_years(year: int) -> str:
     n_year = year + 1
     return f"{year}-{n_year}"
 
 
-def edit_regular_season_table(regular_season_table):
+def edit_regular_season_table(regular_season_table: pd.DataFrame) -> pd.DataFrame:
 
     regular_season_table = regular_season_table.copy()
     # Top Team Scorer --> Most Goals (scored by a player)
@@ -36,7 +34,7 @@ def edit_regular_season_table(regular_season_table):
     return regular_season_table
 
 
-def edit_home_away_table(home_away_table):
+def edit_home_away_table(home_away_table: pd.DataFrame) -> pd.DataFrame:
 
     home_away_table = home_away_table.copy()
     squads = home_away_table["Unnamed: 1_level_0", "Squad"]
@@ -62,7 +60,7 @@ def edit_home_away_table(home_away_table):
     return home_away_stats
 
 
-def remove_unnamed_cols(df):
+def remove_unnamed_cols(df: pd.DataFrame) -> pd.DataFrame:  # TODO: rename the function
 
     to_be_removed = [
         "Unnamed: 0_level_0",
@@ -93,7 +91,7 @@ def remove_unnamed_cols(df):
     return df
 
 
-def clean_opp_df(df_opp):
+def clean_opp_df(df_opp: pd.DataFrame) -> pd.DataFrame:
 
     # Removing the "vs " from the Opposition squad col
     df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
@@ -113,7 +111,7 @@ def clean_opp_df(df_opp):
     return df_opp
 
 
-def clean_main_df(df):
+def clean_main_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df = get_squad_as_index(df)
     df = remove_unnamed_cols(df)
@@ -121,17 +119,17 @@ def clean_main_df(df):
     return df
 
 
-def merge_dfs(df, df_opp):
+def merge_dfs(df: pd.DataFrame, df_opp: pd.DataFrame) -> pd.DataFrame:
 
     return clean_main_df(df.copy()).join(clean_opp_df(df_opp.copy()))
 
 
-def edit_squad_stats(squad_std_stats, squad_opp_std_stats):
+def edit_squad_stats(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> pd.DataFrame:
     """Getting two dfs one with the teams std stats and one with their opposition.
     Editing and merging the two dfs into one.
     """
 
-    squad_opp_std_stats = clean_opp_df(squad_opp_std_stats)
+    squad_opp_std_stats = clean_opp_df(squad_opp_std_stats) 
 
     # Dropping the first level of the cols in both dfs
     squad_std_stats = squad_std_stats.droplevel(level=0, axis=1)
@@ -141,7 +139,7 @@ def edit_squad_stats(squad_std_stats, squad_opp_std_stats):
     return squad_df
 
 
-def _create_squad_tables(column_name, squad_df, opp_squad_df):
+def _create_squad_tables(column_name:str, squad_df: pd.DataFrame, opp_squad_df: pd.DataFrame) -> pd.DataFrame:
 
     squad_df = squad_df[column_name]
     opp_squad_df = opp_squad_df[column_name]
@@ -150,7 +148,7 @@ def _create_squad_tables(column_name, squad_df, opp_squad_df):
     return df_merged
 
 
-def edit_standard_stats_table(squad_std_stats, squad_opp_std_stats):
+def edit_standard_stats_table(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> pd.DataFrame:
     """Taking as an input the Team's and their opposition team's stats and create
     5 tables.
 
@@ -248,7 +246,7 @@ def edit_standard_stats_table(squad_std_stats, squad_opp_std_stats):
     return squad_seasonal_stats
 
 
-def edit_gk_talbes(gk_df, gk_opp_df):
+def edit_gk_tables(gk_df: pd.DataFrame, gk_opp_df: pd.DataFrame) -> pd.DataFrame:
     """
     Taking as an input the 2 gk tables and generating 1
 
@@ -293,7 +291,7 @@ def edit_gk_talbes(gk_df, gk_opp_df):
     return gk_overall
 
 
-def get_single_season_league_data(country, tier, year):
+def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     league_id = leagues[country][tier]["id"]
     league_name = leagues[country][tier]["name"]
     season = get_season_years(year)
@@ -382,7 +380,7 @@ def get_single_season_league_data(country, tier, year):
         :PKsv_Opp: Penalty Saved by Opposition Gks
         :Save%_Opp: Penalty Saved percentage by Opposition Gks
     """
-    gk_overall = edit_gk_talbes(leagues_list[4], leagues_list[5])
+    gk_overall = edit_gk_tables(leagues_list[4], leagues_list[5])
     # TODO: Advanced Gk
     """
     Squad Shooting
