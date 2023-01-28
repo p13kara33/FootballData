@@ -526,15 +526,43 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     """
     squad_defensive_actions_df = merge_dfs(leagues_list[16], leagues_list[17])
     squad_defensive_actions_df.rename(columns={"Details": "Advanced_Defending"}, inplace=True)
+    # Squad Possession
+    """
+    Squad Possession
+    - Touches -->
+        :Touches: Number of touches on the ball
+        :Def_Pen: Touches in Defending Penalty Area
+        :Def_3rd: Touches in defensive 3rd
+        :Mid_3rd: Touches in middle 3rd
+        :Att_3rd: Touches in attacking 3rd
+        :Att_Pen: Touches in Attacking penalty area
+        :Live: Live Ball Touches
+    - Dribbles -->
+        :Succ: Number of successful dribbles
+        :Att: Number of attempted dribbles
+        :Succ%: Percentage of successful dribbles
+        :Mis: Number of times a player failed to gain control of the ball
+        :Dis: Number of times a player lost control of the ball after been
+            tackled
+    - Receiving -->
+        :Rec: Number of times a player successfully received a pass
+        :Prog: Progressive Passes Received: Completed passes that move the
+            ball towards the opponent's goal at least 10 yards from its
+            furthest point in the last six passes, or any completed pass
+            into the penalty area. 
+            Excludes passes from the defending 40% of the pitch
+    """
+    squad_possession_stats = merge_dfs(leagues_list[18], leagues_list[19])
     seasons_data = {
         "standings_table": regular_season,
         "home_away": home_away,
         "standard_data": std_squads_stats,
         "gk_overall": gk_overall,
-        "shooting_data": shooting_dfs,
-        "passing_data": squad_passing_df,
-        "pass_types_data": squad_pass_type_df,
-        "gca_data": squad_goal_shot_creation_df,
+        "shooting": shooting_dfs,
+        "passing": squad_passing_df,
+        "pass_types": squad_pass_type_df,
+        "gca": squad_goal_shot_creation_df,
         "defensive_actions": squad_defensive_actions_df,
+        "possession": squad_possession_stats,
     }
     return seasons_data
