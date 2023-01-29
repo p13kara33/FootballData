@@ -130,12 +130,14 @@ def merge_dfs(df: pd.DataFrame, df_opp: pd.DataFrame) -> pd.DataFrame:
     return clean_main_df(df.copy()).join(clean_opp_df(df_opp.copy()))
 
 
-def edit_squad_stats(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> pd.DataFrame:
+def edit_squad_stats(
+    squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame
+) -> pd.DataFrame:
     """Getting two dfs one with the teams std stats and one with their opposition.
     Editing and merging the two dfs into one.
     """
 
-    squad_opp_std_stats = clean_opp_df(squad_opp_std_stats) 
+    squad_opp_std_stats = clean_opp_df(squad_opp_std_stats)
 
     # Dropping the first level of the cols in both dfs
     squad_std_stats = squad_std_stats.droplevel(level=0, axis=1)
@@ -145,7 +147,9 @@ def edit_squad_stats(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.Data
     return squad_df
 
 
-def _create_squad_tables(column_name:str, squad_df: pd.DataFrame, opp_squad_df: pd.DataFrame) -> pd.DataFrame:
+def _create_squad_tables(
+    column_name: str, squad_df: pd.DataFrame, opp_squad_df: pd.DataFrame
+) -> pd.DataFrame:
 
     squad_df = squad_df[column_name]
     opp_squad_df = opp_squad_df[column_name]
@@ -154,7 +158,9 @@ def _create_squad_tables(column_name:str, squad_df: pd.DataFrame, opp_squad_df: 
     return df_merged
 
 
-def edit_standard_stats_table(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> dict:
+def edit_standard_stats_table(
+    squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame
+) -> dict:
     """Taking as an input the Team's and their opposition team's stats and create
     5 tables.
 
@@ -286,31 +292,37 @@ def edit_gk_tables(gk_df: pd.DataFrame, gk_opp_df: pd.DataFrame) -> pd.DataFrame
     return gk_overall
 
 
-def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
-    """
-    Takes as arguments the country the tier of the league and the first
-    calendar year of the season and returns a dict with the following dfs
-    * standings_table 
-    * home_away 
-    * standard_data 
-    * gk_overall 
-    * gk_advanced
-    * shooting 
-    * passing 
-    * pass_types 
-    * gca 
-    * defensive_actions 
-    * possession 
-    * other
-
-    For each df there are documentation docstrings as per the meaning 
-    of each column
-    """
+def get_seasons_list_of_tables(country: str, tier: int, year: int) -> list:
     league_id = leagues[country][tier]["id"]
     league_name = leagues[country][tier]["name"]
     season = get_season_years(year)
 
     leagues_list = pd.read_html(LEAGUE_URL.format(league_id, season))
+
+    return leagues_list
+
+
+def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
+    """
+    Takes as arguments the country the tier of the league and the first
+    calendar year of the season and returns a dict with the following dfs
+    * standings_table
+    * home_away
+    * standard_data
+    * gk_overall
+    * gk_advanced
+    * shooting
+    * passing
+    * pass_types
+    * gca
+    * defensive_actions
+    * possession
+    * other
+
+    For each df there are documentation docstrings as per the meaning
+    of each column
+    """
+    leagues_list = get_seasons_list_of_tables(country=country, tier=tier, year=year)
 
     # Edit original tables
     """
@@ -609,7 +621,9 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Err: Mistakes leading to an opponent's shot
     """
     squad_defensive_actions_df = merge_dfs(leagues_list[16], leagues_list[17])
-    squad_defensive_actions_df.rename(columns={"Details": "Advanced_Defending"}, inplace=True)
+    squad_defensive_actions_df.rename(
+        columns={"Details": "Advanced_Defending"}, inplace=True
+    )
     # Squad Possession
     """
     Squad Possession
@@ -675,3 +689,4 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         "other": other_stats,
     }
     return seasons_data
+
