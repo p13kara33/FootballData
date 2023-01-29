@@ -690,7 +690,8 @@ def create_xlsx_from_dict(country: str, tier: int, season: str, data_dict: dict)
             logger.warning(f"{filename} exists")
             continue
         logger.info(f"Creating {path}")
-        df.to_excel(path)
+        header = df.columns
+        df.to_excel(path, header=header)
 
 
 def create_multiple_season_dfs(country: str, tier: int, year_range: str):
@@ -732,6 +733,6 @@ def create_multiple_season_dfs(country: str, tier: int, year_range: str):
             )
             continue
         data_dict = get_single_season_league_data(country=country, tier=tier, year=year)
-        create_csv_from_dict(
+        create_xlsx_from_dict(
             country=country, tier=tier, season=season, data_dict=data_dict
         )
