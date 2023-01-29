@@ -1,4 +1,7 @@
 # Helper functions
+import logging
+import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -6,6 +9,17 @@ from settings import (
     leagues,
     LEAGUE_URL,
 )
+
+# Create a logger object
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+
+console_formatter = logging.Formatter(
+    "\033[92m%(name)s - %(levelname)s - %(message)s\033[0m"
+)
+console_handler.setFormatter(console_formatter)
+logger.addHandler(console_handler)
 
 
 def get_squad_as_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -147,17 +161,6 @@ def edit_squad_stats(
     return squad_df
 
 
-def _create_squad_tables(
-    column_name: str, squad_df: pd.DataFrame, opp_squad_df: pd.DataFrame
-) -> pd.DataFrame:
-
-    squad_df = squad_df[column_name]
-    opp_squad_df = opp_squad_df[column_name]
-    df_merged = pd.merge(squad_df, opp_squad_df, right_index=True, left_index=True)
-
-    return df_merged
-
-
 def edit_standard_stats_table(
     squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame
 ) -> dict:
@@ -251,9 +254,8 @@ def edit_standard_stats_table(
 
     squad_seasonal_stats["Standard"] = df_std_squads
 
-    for column_name in ["Performance", "Per 90 Minutes", "Expected"]:
-        df = _create_squad_tables(column_name, squad_opp_std_stats, squad_std_stats)
-        squad_seasonal_stats[column_name] = df
+    squad_seasonal_stats = merge_dfs(squad_std_stats, squad_opp_std_stats)
+    squad_seasonal_stats.drop(columns="Playing_Time", axis=1, level=0, inplace=True)
 
     return squad_seasonal_stats
 
@@ -302,12 +304,16 @@ def get_seasons_list_of_tables(country: str, tier: int, year: int) -> list:
     return leagues_list
 
 
+# Make it robust so it can get into account data before the 2017-2018 season
 def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     """
     Takes as arguments the country the tier of the league and the first
     calendar year of the season and returns a dict with the following dfs
     * standings_table
-    * home_away
+    * home"
+    * "away"
+    * "h-a"
+    * "h%a"
     * standard_data
     * gk_overall
     * gk_advanced
@@ -370,18 +376,9 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         Df standard stats
         :#Pl: Number of Players used in games
         :Age: Age is weighted by minutes played
-        :Age_Opp: Age of the opposition teams
         :Poss: Possession, calculated as the % of passes attempted
-        :Poss_Opp: The % of passes attempted by the opposition teams
     - Performance  ->
         DF Performance
-        :Gls_Opp: Goals conceded
-        :Ast_Opp: Assists allowed
-        :G-PK_Opp: No penalty goals conceded
-        :PK_Opp:  Goals from Penalty conceded
-        :PKatt_Opp: Penalty Kicks attempted by opposition teams
-        :CrdY_Opp: Yellow Cards the opposition received
-        :CrdR_Opp: Red Cards the opposition received
         :Gls: Goals scored
         :Ast: Assists
         :G-PK: Non Penalty Goals (Total Goals - Pk)
@@ -390,16 +387,6 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :CrdY: Yellow Cards
         :CrdR: Red Cards
     - Per 90 Minutes'  ->
-        :Gls_Opp: Goals allowed per 90'
-        :Ast_Opp: Assists allowed per 90'
-        :G+A_Opp: Goals and Assists allowed per 90'
-        :G-PK_Opp: Non Penalty Goals allowed per 90'
-        :G+A-PK_Opp: Non Penalty Goals and assists allowed per 90'
-        :xG_Opp: Expected Goals of opposition allowed per 90'
-        :xAG_Opp: Expected Assists of opposition allowed per 90'
-        :xG+xAG_Opp: Expected Goals and expected Assists of opposition allowed per 90'
-        :npxG_Opp: Non penalty Expected Goals of opposition allowed per 90'
-        :npxG+xAG_Opp: Non Penalty Expected Goals and Expected Assists of opposition allowed by 90'
         :Gls: Goals scored per 90'
         :Ast: Assists made per 90'
         :G+A: Goal and Assists per 90'
@@ -411,10 +398,6 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :npxG: Expected Non Penalty Goals per 90'
         :npxG+xAG: Expected Non Penalty Goals and Expected Assists per 90'
     - Expected  ->
-        :xG_Opp: Expected Goals allowed
-        :npxG_Opp: Expected Non Penalty Goals allowed
-        :xAG_Opp: Expected Assists allowed
-        :npxG+xAG_Opp: Expected Non Penalty Goals and Expected Assists allowed
         :xG: Expected Goals
         :npxG: Expected Non Penalty Goals
         :xAG: Expected Assists
@@ -676,7 +659,10 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     other_stats = merge_dfs(leagues_list[22], leagues_list[23])
     seasons_data = {
         "standings_table": regular_season,
-        "home_away": home_away,
+        "home": home_away["home"],
+        "away": home_away["away"],
+        "h-a": home_away["h-a"],
+        "h_div_a": home_away["h/a"],
         "standard_data": std_squads_stats,
         "gk_overall": gk_overall,
         "gk_advanced": advanced_gk,
@@ -688,5 +674,64 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         "possession": squad_possession_stats,
         "other": other_stats,
     }
+
     return seasons_data
 
+
+def create_xlsx_from_dict(country: str, tier: int, season: str, data_dict: dict):
+
+    for data, df in data_dict.items():
+        filename = f"{data}.xlsx"
+        directory = Path(f"./frames/{country}/{tier}/{season}/")
+        path = Path(directory, f"{filename}")
+        if not directory.exists():
+            os.makedirs(directory)
+        elif path.exists():
+            logger.warning(f"{filename} exists")
+            continue
+        logger.info(f"Creating {path}")
+        df.to_excel(path)
+
+
+def create_multiple_season_dfs(country: str, tier: int, year_range: str):
+
+    league_name = leagues[country][tier].get("name")
+    files_to_check = [
+        "standings_table.csv",
+        "home_away.csv",
+        "standard_data.csv",
+        "gk_overall.csv",
+        "gk_advanced.csv",
+        "shooting.csv",
+        "passing.csv",
+        "pass_types.csv",
+        "gca.csv",
+        "defensive_actions.csv",
+        "possession.csv",
+        "other.csv",
+    ]
+
+    # Create list of years to feed the get_single_season_league_data
+    years = year_range.split("-")
+    start_year = int(years[0])
+    end_year = int(years[1])
+    beginning_of_season_yrs = [year for year in range(start_year, end_year)]
+
+    for year in beginning_of_season_yrs:
+        season = get_season_years(year=year)
+        path_of_data = Path(f"./frames/{country}/{tier}/{season}/")
+        all_files_exist = all(
+            [
+                os.path.exists(os.path.join(path_of_data, file))
+                for file in files_to_check
+            ]
+        )
+        if all_files_exist:
+            logger.warning(
+                f"All the {league_name}'s data from the {season} season exist."
+            )
+            continue
+        data_dict = get_single_season_league_data(country=country, tier=tier, year=year)
+        create_csv_from_dict(
+            country=country, tier=tier, season=season, data_dict=data_dict
+        )
