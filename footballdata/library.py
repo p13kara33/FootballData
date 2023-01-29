@@ -9,7 +9,13 @@ from settings import (
 
 
 def get_squad_as_index(df: pd.DataFrame) -> pd.DataFrame:
-    index = np.array(df["Unnamed: 0_level_0", "Squad"])
+    try:
+        index = np.array(df["Unnamed: 0_level_0", "Squad"])
+    except KeyError:
+        try:
+            index = np.array(df["Unnamed: 1_level_0", "Squad"])
+        except KeyError:
+            print("NO SQUAD INFO")
     df.index = index
 
     return df
@@ -34,7 +40,7 @@ def edit_regular_season_table(regular_season_table: pd.DataFrame) -> pd.DataFram
     return regular_season_table
 
 
-def edit_home_away_table(home_away_table: pd.DataFrame) -> pd.DataFrame:
+def edit_home_away_table(home_away_table: pd.DataFrame) -> dict:
 
     home_away_table = home_away_table.copy()
     squads = home_away_table["Unnamed: 1_level_0", "Squad"]
@@ -148,7 +154,7 @@ def _create_squad_tables(column_name:str, squad_df: pd.DataFrame, opp_squad_df: 
     return df_merged
 
 
-def edit_standard_stats_table(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> pd.DataFrame:
+def edit_standard_stats_table(squad_std_stats: pd.DataFrame, squad_opp_std_stats: pd.DataFrame) -> dict:
     """Taking as an input the Team's and their opposition team's stats and create
     5 tables.
 
@@ -271,38 +277,80 @@ def edit_gk_tables(gk_df: pd.DataFrame, gk_opp_df: pd.DataFrame) -> pd.DataFrame
 
     gk_df = get_squad_as_index(gk_df.copy())
     gk_opp_df = get_squad_as_index(gk_opp_df.copy())
+    gk_df.drop(["W", "D", "L"], axis=1, level=1, inplace=True)
+    gk_opp_df.drop(["W", "D", "L"], axis=1, level=1, inplace=True)
 
-    del_cols = ["W", "D", "L", "GA", "GA90", "PKatt", "PKA", "PKm"]
-    col_0 = [
-        ["Performance", "Penalty Kicks"],
-        ["Goals", "Expected", "Launched", "Passes", "Goal Kicks", "Crosses", "Sweeper"],
-    ]
-    gk_df = gk_df[col_0[0]]
-    gk_df = gk_df.droplevel(0, axis=1)
-    gk_df.drop(columns=del_cols, inplace=True)
-
-    gk_opp_df = clean_opp_df(gk_opp_df)
-    gk_opp_df = gk_opp_df[col_0[0]]
-    gk_opp_df = gk_opp_df.droplevel(0, axis=1)
-    gk_opp_df.drop(columns=[f"{col}_Opp" for col in del_cols], inplace=True)
-
-    gk_overall = gk_df.join(gk_opp_df)
+    gk_overall = merge_dfs(gk_df, gk_opp_df)
+    gk_overall.drop("Playing_Time", axis=1, level=0, inplace=True)
 
     return gk_overall
 
 
 def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
+    """
+    Takes as arguments the country the tier of the league and the first
+    calendar year of the season and returns a dict with the following dfs
+    * standings_table 
+    * home_away 
+    * standard_data 
+    * gk_overall 
+    * 
+    * shooting 
+    * passing 
+    * pass_types 
+    * gca 
+    * defensive_actions 
+    * possession 
+    * other
+
+    For each df there are documentation docstrings as per the meaning 
+    of each column
+    """
     league_id = leagues[country][tier]["id"]
     league_name = leagues[country][tier]["name"]
     season = get_season_years(year)
 
-    leagues_list = pd.read_html(LEAGUE_URL.format(id, season))
+    leagues_list = pd.read_html(LEAGUE_URL.format(league_id, season))
 
     # Edit original tables
-    # TODO: Add Columns documentation
+    """
+    Regular Season Standing table
+        :RK: Ranking
+        :Squad: Team's Name
+        :MP: Matched Played
+        :W: Wins
+        :D: Draws
+        :L: Losses
+        :GF: Goal For
+        :GA: Goal Against
+        :GD: Goal Difference
+        :Pts: Points won
+        :Pts/Mp: Points per Game
+        :xG: Expected Goals
+        :XGA: Expected Assists
+        :XGD: Expected Goals Difference
+        :Attendance: Average Home attendance
+        :M_G_Indv: Most Goals Scored by one player.
+    """
     regular_season = edit_regular_season_table(leagues_list[0])
     # Dictionary of 4 dfs. Home, Away, Home - Away, Home / Away stats
-    # TODO: Add Columns documentation
+    """
+    Home Away data are 4 different dfs with the same columns
+    - Home, Away, H-A, H/A -->
+        :MP: Matched Played
+        :W: Wins
+        :D: Draws
+        :L: Losses
+        :GF: Goal For
+        :GA: Goal Against
+        :GD: Goal Difference
+        :Pts: Points won
+        :Pts/Mp: Points per Game
+        :xG: Expected Goals
+        :XGA: Expected Assists
+        :XGD: Expected Goals Difference
+    """
+    # The first two dfs can be configured easily be calling clean_df on them
     home_away = edit_home_away_table(leagues_list[1])
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
     """
@@ -362,26 +410,62 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     std_squads_stats = edit_standard_stats_table(leagues_list[2], leagues_list[3])
     # GoalKeeping General Stats
     """
-    - Gk Overall  ->:
-        :SoTA: Shot on Target Against
+    GK Overall
+    - Performance -->
+        :GA: Goal Conceded
+        :GA: Goals Conceded per 90'
+        :SoTA: Shots on Target Against
         :Saves: Saves
         :Save%: Save percentage
         :CS: Clean Sheets
         :CS%: Clean Sheets percentage
-        :PKA:
+    - Penalty Kicks -->
+        :PKatt: Penalty Kicks Attempted
+        :PKA: Penalty Kicks Allowed
         :PKsv: Penalty Kicks Saved
-        ::
-        :Save%: Penalty Save Percentage
-        :SoTA_Opp: Shot on Target Against of Opposition Gks
-        :Saves_Opp: Saves of Opposition Gks
-        :Save%_Opp: Save Percentage of Opposition Gks
-        :CS_Opp: Clean sheets of Opposition Gks
-        :CS%_Opp: Clean sheets percentage of Opposition Gks
-        :PKsv_Opp: Penalty Saved by Opposition Gks
-        :Save%_Opp: Penalty Saved percentage by Opposition Gks
+        :Save%: Penalty Kicks Saved Percentage
     """
     gk_overall = edit_gk_tables(leagues_list[4], leagues_list[5])
-    # TODO: Advanced Gk
+    # Advanced Gk
+    """
+    Advanced Goalkeeping
+    - Goals -->
+        :GA: Goal Against
+        :PKA: Penalty Kicks Allowed
+        :FK: FK Goals Conceded
+        :CK: Goals Conceded by CornerKicks
+        :OG: Own Goals
+    - Expected -->
+        :PSxG: Post-Shot Expected Goals: How likely is the goalkeeper to save the shot
+        :PSxG/SoT: Post-Shot Expected Goal per Shot on Target
+        :PSxG+/-: Post-Shot Expected Goals Minus Goals Allowed: numbers suggest better
+                luck or an above average ability to stop shots PSxG is expected goals based
+                on how likely the goalkeeper is to save the shot 
+                Note: Does not include own goals xG totals include penalty kicks, 
+        :/90: Post-Shot Expected Goals Minus Goals Allowed per 90'
+    - Launched (passes longer than 40 yrds) -->
+        :Cmp: Launches Completed
+        :Att: Launches Attempted
+        :Cmp%: Percentage of Successful Launches attempted 
+    - Passes -->
+        :Att: Passes Attempted
+        :Thr: Throws Attempted
+        :Launch%: Percentage of Launches out of the total attempted passes
+        :AvgLen: Average length of Passes in yards
+    - Goal Kicks -->
+        :Att: Goal Kicks Attempted 
+        :Launch%: Percentage of Launches out of the total attempted Goal Kick
+        :AvgLen: Average length of Goal Kick in yards
+    - Crosses -->
+        :Opp: Opponent's Attempted Crosses into penalty area
+        :Stp: Number of crosses that were successfully stopped by a GoalKeeper
+        :Stp%: Percentage of crosses that were successfully stopped by a GoalKeeper
+    - Sweeper --> 
+        :#OPA: Number of defensive action outside the penalty area
+        :#OPA/90: Number of defensive action outside the penalty area per 90'
+        :AvgDist: Average distance from goal in yards of all defensive actions
+    """
+    advanced_gk = merge_dfs(leagues_list[6], leagues_list[7])
     """
     Squad Shooting
     - Standard shooting ->
@@ -553,20 +637,41 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
             Excludes passes from the defending 40% of the pitch
     """
     squad_possession_stats = merge_dfs(leagues_list[18], leagues_list[19])
-    # Squad Playing Time
+    # Squad Other Stats
     """
+    Squad Other (Miscellaneous) Stats
+    - Performance -->
+        :CrdY: Number of Yellow Cards
+        :CrdR: Number of Red Cards
+        :2CrdY: Number of 2nd Yellow Cards
+        :Fls: Fouls Committed 
+        :Fld: Fouls Won
+        :Off: Number Offsides
+        :Crs: Number of Crosses
+        :Int: Number of Interceptions
+        :Tkl: Number of Tackles Won
+        :PKwon: Penalty Kicks won
+        :PKcon: Penalty Kicks conceded 
+        :OG: Own Goals
+        :Recov: Number of loose balls recovered
+    - Aerial_Duels
+        :Won: Number of Aerial Duels Won
+        :Lost: Number of Aerial Duels Lost
+        :Won%: Percentage of Aerial Duels Won
     """
-    squad_playing_time = merge_dfs(leagues_list[20], leagues_list[21])
+    other_stats = merge_dfs(leagues_list[22], leagues_list[23])
     seasons_data = {
         "standings_table": regular_season,
         "home_away": home_away,
         "standard_data": std_squads_stats,
         "gk_overall": gk_overall,
+        "gk_advanced": advanced_gk,
         "shooting": shooting_dfs,
         "passing": squad_passing_df,
         "pass_types": squad_pass_type_df,
         "gca": squad_goal_shot_creation_df,
         "defensive_actions": squad_defensive_actions_df,
         "possession": squad_possession_stats,
+        "other": other_stats,
     }
     return seasons_data
