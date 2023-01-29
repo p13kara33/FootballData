@@ -553,6 +553,10 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
             Excludes passes from the defending 40% of the pitch
     """
     squad_possession_stats = merge_dfs(leagues_list[18], leagues_list[19])
+    # Squad Playing Time
+    """
+    """
+    squad_playing_time = merge_dfs(leagues_list[20], leagues_list[21])
     seasons_data = {
         "standings_table": regular_season,
         "home_away": home_away,
