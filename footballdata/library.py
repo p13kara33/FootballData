@@ -294,6 +294,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     * home_away 
     * standard_data 
     * gk_overall 
+    * gk_advanced
     * shooting 
     * passing 
     * pass_types 
@@ -664,6 +665,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         "home_away": home_away,
         "standard_data": std_squads_stats,
         "gk_overall": gk_overall,
+        "gk_advanced": advanced_gk,
         "shooting": shooting_dfs,
         "passing": squad_passing_df,
         "pass_types": squad_pass_type_df,
