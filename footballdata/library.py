@@ -678,7 +678,9 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     return seasons_data
 
 
-def create_xlsx_from_dict(country: str, tier: int, season: str, data_dict: dict):
+def create_xlsx_from_dict(
+    country: str, tier: int, season: str, data_dict: dict[str, pd.DataFrame]
+):
 
     for data, df in data_dict.items():
         filename = f"{data}.xlsx"
@@ -691,7 +693,7 @@ def create_xlsx_from_dict(country: str, tier: int, season: str, data_dict: dict)
             continue
         logger.info(f"Creating {path}")
         header = df.columns
-        df.to_excel(path, header=header)
+        df.to_excel(path, header=header, index=False)
 
 
 def create_multiple_season_dfs(country: str, tier: int, year_range: str):
