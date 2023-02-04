@@ -1,0 +1,32 @@
+﻿body {
+    background-color: #7F7F7F;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.team {
+    font-weight: bold;
+    color: inherit;
+}
+
+#man_city {
+    color: #6CABDD;
+}
+
+#liverpool {
+    color: #C8102E;
+}
+
+#chelsea {
+    color: #6A7AB5;
+}
+
+#man_utd {
+    color: #DA291C;
+}
+
+#spurs {
+    color: #132257;
+}

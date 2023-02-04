@@ -1,0 +1,11 @@
+setup.py
+footballdata/__init__.py
+footballdata/library.py
+footballdata/main.py
+footballdata/plots.py
+footballdata/scrap_fbref.py
+footballdata/settings.py
+footballdata.egg-info/PKG-INFO
+footballdata.egg-info/SOURCES.txt
+footballdata.egg-info/dependency_links.txt
+footballdata.egg-info/top_level.txt

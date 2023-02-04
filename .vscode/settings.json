@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "footballdata",
         "ggplot",
         "gridon",
         "matplotlib",
@@ -9,5 +10,10 @@
         "xgridoff",
         "yaxis",
         "ygridoff"
-    ]
+    ],
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }

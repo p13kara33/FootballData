@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 from settings import (
     leagues,
@@ -29,13 +30,29 @@ def get_squad_as_index(df: pd.DataFrame) -> pd.DataFrame:
         try:
             index = np.array(df["Unnamed: 1_level_0", "Squad"])
         except KeyError:
-            print("NO SQUAD INFO")
+            raise KeyError("NO SQUAD INFO")
     df.index = index
 
     return df
 
 
 def get_season_years(year: int) -> str:
+
+    if not isinstance(year, int):
+        try:
+            year = int(year)
+        except TypeError:
+            raise TypeError(
+                f"Year value should be an int, or str you entered {year} which is {type(year)}."
+            )
+    if len(str(year)) != 4:
+        raise KeyError("The value of year should be a 4 digit number")
+    
+    current_year = datetime.now().year 
+    first_data_year = 1888
+    if year < first_data_year or year > current_year:
+        raise KeyError(f"No football data for {year}")
+    
     n_year = year + 1
     return f"{year}-{n_year}"
 
@@ -294,7 +311,7 @@ def edit_gk_tables(gk_df: pd.DataFrame, gk_opp_df: pd.DataFrame) -> pd.DataFrame
     return gk_overall
 
 
-def get_seasons_list_of_tables(country: str, tier: int, year: int) -> list:
+def get_year_at_season_st_of_tables(country: str, tier: int, year: int) -> list:
     league_id = leagues[country][tier]["id"]
     league_name = leagues[country][tier]["name"]
     season = get_season_years(year)
@@ -328,7 +345,9 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     For each df there are documentation docstrings as per the meaning
     of each column
     """
-    leagues_list = get_seasons_list_of_tables(country=country, tier=tier, year=year)
+    leagues_list = get_year_at_season_st_of_tables(
+        country=country, tier=tier, year=year
+    )
 
     # Edit original tables
     """
@@ -680,7 +699,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
 
 def create_xlsx_from_dict(
     country: str, tier: int, season: str, data_dict: dict[str, pd.DataFrame]
-):
+) -> None:
 
     for data, df in data_dict.items():
         filename = f"{data}.xlsx"
@@ -696,32 +715,47 @@ def create_xlsx_from_dict(
         df.to_excel(path, header=header, index=False)
 
 
-def create_multiple_season_dfs(country: str, tier: int, year_range: str):
+def year_at_season_st_list(year_range: str) -> list:
+    """Create list of years to feed the get_single_season_league_data."""
+    if not isinstance(year_range, str):
+        raise TypeError(f"{year_range} is not a string.")
+
+    years = year_range.split("-")
+    if len(years) <= 1:
+        raise KeyError("Year range input should look like this: '2010-2020'")
+    start_year = int(years[0])
+    end_year = int(years[1])
+    if start_year >= end_year:
+        raise KeyError(
+            "First year of a year range can't be greater or equal to the last year"
+        )
+    year_at_season_st_list = [year for year in range(start_year, end_year)]
+
+    return year_at_season_st_list
+
+
+def create_multiple_season_dfs(country: str, tier: int, year_range: str) -> None:
 
     league_name = leagues[country][tier].get("name")
     files_to_check = [
-        "standings_table.csv",
-        "home_away.csv",
-        "standard_data.csv",
-        "gk_overall.csv",
-        "gk_advanced.csv",
-        "shooting.csv",
-        "passing.csv",
-        "pass_types.csv",
-        "gca.csv",
-        "defensive_actions.csv",
-        "possession.csv",
-        "other.csv",
+        "standings_table.xlsx",
+        "home_away.xlsx",
+        "standard_data.xlsx",
+        "gk_overall.xlsx",
+        "gk_advanced.xlsx",
+        "shooting.xlsx",
+        "passing.xlsx",
+        "pass_types.xlsx",
+        "gca.xlsx",
+        "defensive_actions.xlsx",
+        "possession.xlsx",
+        "other.xlsx",
     ]
 
-    # Create list of years to feed the get_single_season_league_data
-    years = year_range.split("-")
-    start_year = int(years[0])
-    end_year = int(years[1])
-    beginning_of_season_yrs = [year for year in range(start_year, end_year)]
+    years = year_at_season_st_list(year_range)
 
-    for year in beginning_of_season_yrs:
-        season = get_season_years(year=year)
+    for year in years:
+        season = get_season_years(year)
         path_of_data = Path(f"./frames/{country}/{tier}/{season}/")
         all_files_exist = all(
             [
