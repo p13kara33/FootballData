@@ -6,8 +6,8 @@ from footballdata.library import (
     get_season_years,
 )
 
-class Test_get_season_years:
 
+class Test_get_season_years:
     def test_normal_case(self):
         year = 2010
         expected_result = "2010-2011"
@@ -17,9 +17,9 @@ class Test_get_season_years:
 
     def test_two_digits_input(self):
         year = 10
-        with pytest.raises(KeyError): 
+        with pytest.raises(KeyError):
             get_season_years(year)
-    
+
     def test_no_int_year(self):
         year_0 = "2010"
         expected_result = "2010-2011"
@@ -28,8 +28,8 @@ class Test_get_season_years:
 
         year_1 = [2010]
         with pytest.raises(TypeError):
-            get_season_years(year_1)        
-    
+            get_season_years(year_1)
+
     def test_incorrect_year(self):
         year = 1000
         with pytest.raises(KeyError):
@@ -37,11 +37,12 @@ class Test_get_season_years:
 
 
 class Test_year_at_season_st_list:
-
     def test_normal_case(self):
         """Test the normal case when the user gives correct input"""
         year_range = "2010-2020"
-        expected_result = np.array([2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019])
+        expected_result = np.array(
+            [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019]
+        )
         result = np.array(year_at_season_st_list(year_range=year_range))
 
         assert expected_result.size == result.size
