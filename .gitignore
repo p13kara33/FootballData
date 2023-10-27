@@ -1,1 +1,6 @@
-./footballdata/__pycache/
+# Ignore all dirs based on name
+__pycache__/
+
+# Ignoring files starting with .
+.*
+! .gitignore
