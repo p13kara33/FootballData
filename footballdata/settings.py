@@ -9,7 +9,7 @@ fc_ids = {
 }
 
 
-#### League Dictionary Format ####
+# League Dictionary Format ####
 # "country": {
 #         tier_no: {
 #             "id": int

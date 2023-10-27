@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from settings import (
+from footballdata.settings import (
     leagues,
     LEAGUE_URL,
 )
@@ -29,36 +29,53 @@ def get_squad_as_index(df: pd.DataFrame) -> pd.DataFrame:
     except KeyError:
         try:
             index = np.array(df["Unnamed: 1_level_0", "Squad"])
-        except KeyError:
-            raise KeyError("NO SQUAD INFO")
+        except KeyError as exc:
+            raise KeyError("NO SQUAD INFO") from exc
     df.index = index
 
     return df
 
 
 def get_season_years(year: int) -> str:
-
     if not isinstance(year, int):
         try:
             year = int(year)
-        except TypeError:
+        except TypeError as exc:
             raise TypeError(
                 f"Year value should be an int, or str you entered {year} which is {type(year)}."
-            )
+            ) from exc
     if len(str(year)) != 4:
         raise KeyError("The value of year should be a 4 digit number")
-    
-    current_year = datetime.now().year 
+
+    current_year = datetime.now().year
     first_data_year = 1888
     if year < first_data_year or year > current_year:
         raise KeyError(f"No football data for {year}")
-    
+
     n_year = year + 1
     return f"{year}-{n_year}"
 
 
 def edit_regular_season_table(regular_season_table: pd.DataFrame) -> pd.DataFrame:
-
+    """
+    Regular Season Standing table
+        :RK: Ranking
+        :Squad: Team's Name
+        :MP: Matched Played
+        :W: Wins
+        :D: Draws
+        :L: Losses
+        :GF: Goal For
+        :GA: Goal Against
+        :GD: Goal Difference
+        :Pts: Points won
+        :Pts/Mp: Points per Game
+        :xG: Expected Goals
+        :XGA: Expected Assists
+        :XGD: Expected Goals Difference
+        :Attendance: Average Home attendance
+        :M_G_Indv: Most Goals Scored by one player.
+    """
     regular_season_table = regular_season_table.copy()
     # Top Team Scorer --> Most Goals (scored by a player)
     regular_season_table["M_G_Indv"] = regular_season_table["Top Team Scorer"].apply(
@@ -72,7 +89,22 @@ def edit_regular_season_table(regular_season_table: pd.DataFrame) -> pd.DataFram
 
 
 def edit_home_away_table(home_away_table: pd.DataFrame) -> dict:
-
+    """
+    Home Away data are 4 different dfs with the same columns
+    - Home, Away, H-A, H/A -->
+        :MP: Matched Played
+        :W: Wins
+        :D: Draws
+        :L: Losses
+        :GF: Goal For
+        :GA: Goal Against
+        :GD: Goal Difference
+        :Pts: Points won
+        :Pts/Mp: Points per Game
+        :xG: Expected Goals
+        :XGA: Expected Assists
+        :XGD: Expected Goals Difference
+    """
     home_away_table = home_away_table.copy()
     squads = home_away_table["Unnamed: 1_level_0", "Squad"]
     index = pd.MultiIndex.from_arrays(
@@ -98,7 +130,6 @@ def edit_home_away_table(home_away_table: pd.DataFrame) -> dict:
 
 
 def remove_unnamed_cols(df: pd.DataFrame) -> pd.DataFrame:  # TODO: rename the function
-
     to_be_removed = [
         "Unnamed: 0_level_0",
         "Unnamed: 1_level_0",
@@ -129,7 +160,6 @@ def remove_unnamed_cols(df: pd.DataFrame) -> pd.DataFrame:  # TODO: rename the f
 
 
 def clean_opp_df(df_opp: pd.DataFrame) -> pd.DataFrame:
-
     # Removing the "vs " from the Opposition squad col
     df_opp["Unnamed: 0_level_0", "Squad"] = df_opp["Unnamed: 0_level_0", "Squad"].apply(
         lambda x: x.strip("vs ")
@@ -149,7 +179,6 @@ def clean_opp_df(df_opp: pd.DataFrame) -> pd.DataFrame:
 
 
 def clean_main_df(df: pd.DataFrame) -> pd.DataFrame:
-
     df = get_squad_as_index(df)
     df = remove_unnamed_cols(df)
 
@@ -157,7 +186,6 @@ def clean_main_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def merge_dfs(df: pd.DataFrame, df_opp: pd.DataFrame) -> pd.DataFrame:
-
     return clean_main_df(df.copy()).join(clean_opp_df(df_opp.copy()))
 
 
@@ -350,142 +378,25 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     )
 
     # Edit original tables
-    """
-    Regular Season Standing table
-        :RK: Ranking
-        :Squad: Team's Name
-        :MP: Matched Played
-        :W: Wins
-        :D: Draws
-        :L: Losses
-        :GF: Goal For
-        :GA: Goal Against
-        :GD: Goal Difference
-        :Pts: Points won
-        :Pts/Mp: Points per Game
-        :xG: Expected Goals
-        :XGA: Expected Assists
-        :XGD: Expected Goals Difference
-        :Attendance: Average Home attendance
-        :M_G_Indv: Most Goals Scored by one player.
-    """
+
     regular_season = edit_regular_season_table(leagues_list[0])
     # Dictionary of 4 dfs. Home, Away, Home - Away, Home / Away stats
-    """
-    Home Away data are 4 different dfs with the same columns
-    - Home, Away, H-A, H/A -->
-        :MP: Matched Played
-        :W: Wins
-        :D: Draws
-        :L: Losses
-        :GF: Goal For
-        :GA: Goal Against
-        :GD: Goal Difference
-        :Pts: Points won
-        :Pts/Mp: Points per Game
-        :xG: Expected Goals
-        :XGA: Expected Assists
-        :XGD: Expected Goals Difference
-    """
     # The first two dfs can be configured easily be calling clean_df on them
     home_away = edit_home_away_table(leagues_list[1])
     # Dictionary of 4 dfs. Standard, Performance, Per 90' and Expected stats
-    """
-    - Standard  ->
-        Df standard stats
-        :#Pl: Number of Players used in games
-        :Age: Age is weighted by minutes played
-        :Poss: Possession, calculated as the % of passes attempted
-    - Performance  ->
-        DF Performance
-        :Gls: Goals scored
-        :Ast: Assists
-        :G-PK: Non Penalty Goals (Total Goals - Pk)
-        :PK: Penalty Goals
-        :PKatt: Penalty kicks attempted
-        :CrdY: Yellow Cards
-        :CrdR: Red Cards
-    - Per 90 Minutes'  ->
-        :Gls: Goals scored per 90'
-        :Ast: Assists made per 90'
-        :G+A: Goal and Assists per 90'
-        :G-PK: Non Penalty Goals per 90'
-        :G+A-PK: Non Penalty Goals and Assists per 90'
-        :xG: Expected Goals per 90'
-        :xAG: Expected Assists per 90'
-        :xG+xAG: Expected Goals and Expected Assists per 90'
-        :npxG: Expected Non Penalty Goals per 90'
-        :npxG+xAG: Expected Non Penalty Goals and Expected Assists per 90'
-    - Expected  ->
-        :xG: Expected Goals
-        :npxG: Expected Non Penalty Goals
-        :xAG: Expected Assists
-        :npxG+xAG: Expected Non Penalty Goals and Expected Assists"""
     std_squads_stats = edit_standard_stats_table(leagues_list[2], leagues_list[3])
     # GoalKeeping General Stats
-    """
-    GK Overall
-    - Performance -->
-        :GA: Goal Conceded
-        :GA: Goals Conceded per 90'
-        :SoTA: Shots on Target Against
-        :Saves: Saves
-        :Save%: Save percentage
-        :CS: Clean Sheets
-        :CS%: Clean Sheets percentage
-    - Penalty Kicks -->
-        :PKatt: Penalty Kicks Attempted
-        :PKA: Penalty Kicks Allowed
-        :PKsv: Penalty Kicks Saved
-        :Save%: Penalty Kicks Saved Percentage
-    """
+
     gk_overall = edit_gk_tables(leagues_list[4], leagues_list[5])
     # Advanced Gk
-    """
-    Advanced Goalkeeping
-    - Goals -->
-        :GA: Goal Against
-        :PKA: Penalty Kicks Allowed
-        :FK: FK Goals Conceded
-        :CK: Goals Conceded by CornerKicks
-        :OG: Own Goals
-    - Expected -->
-        :PSxG: Post-Shot Expected Goals: How likely is the goalkeeper to save the shot
-        :PSxG/SoT: Post-Shot Expected Goal per Shot on Target
-        :PSxG+/-: Post-Shot Expected Goals Minus Goals Allowed: numbers suggest better
-                luck or an above average ability to stop shots PSxG is expected goals based
-                on how likely the goalkeeper is to save the shot 
-                Note: Does not include own goals xG totals include penalty kicks, 
-        :/90: Post-Shot Expected Goals Minus Goals Allowed per 90'
-    - Launched (passes longer than 40 yrds) -->
-        :Cmp: Launches Completed
-        :Att: Launches Attempted
-        :Cmp%: Percentage of Successful Launches attempted 
-    - Passes -->
-        :Att: Passes Attempted
-        :Thr: Throws Attempted
-        :Launch%: Percentage of Launches out of the total attempted passes
-        :AvgLen: Average length of Passes in yards
-    - Goal Kicks -->
-        :Att: Goal Kicks Attempted 
-        :Launch%: Percentage of Launches out of the total attempted Goal Kick
-        :AvgLen: Average length of Goal Kick in yards
-    - Crosses -->
-        :Opp: Opponent's Attempted Crosses into penalty area
-        :Stp: Number of crosses that were successfully stopped by a GoalKeeper
-        :Stp%: Percentage of crosses that were successfully stopped by a GoalKeeper
-    - Sweeper --> 
-        :#OPA: Number of defensive action outside the penalty area
-        :#OPA/90: Number of defensive action outside the penalty area per 90'
-        :AvgDist: Average distance from goal in yards of all defensive actions
-    """
+
     advanced_gk = merge_dfs(leagues_list[6], leagues_list[7])
     """
     Squad Shooting
     - Standard shooting ->
         :Gls: Goals
         :Sht: Total Number of Shots
-        :SoT: Total Number of Shots on Target 
+        :SoT: Total Number of Shots on Target
         :SoT%: Percentage of Shots on Target
         :Sh/90: Shots per 90'
         :G/Sh: Goal per Shot
@@ -495,7 +406,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :PK: Goals from Penalty Kicks  (TBR!)
         :PKatt: PKs Attempted          (TBR!)
     - Expected shooting stats ->
-        :xG: Expected Goals 
+        :xG: Expected Goals
         :npxG: Non penalty xG
         :npxG/Sh: Non Penalty xG per shot
         :G-xG: Goals minus xG
@@ -511,8 +422,8 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Att: Passes Attempted
         :Cmp%: Completion Percentage
         :TotDist: Total distance in Yards that completed passes have traveled in any direction
-        :PrgDist: Progressive distance: Total distance, in yards, that completed passes have 
-                traveled towards the opponent's goal. 
+        :PrgDist: Progressive distance: Total distance, in yards, that completed passes have
+                traveled towards the opponent's goal.
                 Note: Passes away from opponent's goal are counted as zero progressive yards.
     - Short Passes between 5-15 yards ->
         :Cmp: Short Passes Completed
@@ -529,16 +440,16 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     - Advanced_Passing ->
         :Ast: Assists
         :xAG: Expected Assisted Goals
-        :xA: The likelihood each completed pass becomes a goal assists given 
-            the pass type, phase of play, location and distance. 
+        :xA: The likelihood each completed pass becomes a goal assists given
+            the pass type, phase of play, location and distance.
         :A-xAG: Assists - Expected Assisted Goals
         :KP: Key Passes: Passes that directly lead to a shot (assisted shots)
         :1/3: Completed passes that enter the 1/3 of the pitch closest to the goal
         :PPA: Completed passes into the 18-yard box (not including set pieces)
         :CrsPA: Completed crosses into the 18-yard box (not including set pieces)
-        :Prog: Progressive Passes: Completed passes that move the ball towards the 
-            opponent's goal at least 10 yards from its furthest point in the last 
-            six passes, or any completed pass into the penalty area. 
+        :Prog: Progressive Passes: Completed passes that move the ball towards the
+            opponent's goal at least 10 yards from its furthest point in the last
+            six passes, or any completed pass into the penalty area.
             Excludes passes from the defending 40% of the pitch
     """
     squad_passing_df = merge_dfs(leagues_list[10], leagues_list[11])
@@ -552,11 +463,11 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :FK: Passes from Free kicks
         :TB: Passes sent between the back defenders into open space.
         :Sw: Passes that traveled more than 40 yards of the width of the pitch
-        :Crs: Crosses 
+        :Crs: Crosses
         :TI:Throw-ins Taken
         :CK: Corner Kicks
     -   Corner Kicks ->
-        :In: In-swinging Corner Kicks 
+        :In: In-swinging Corner Kicks
         :Out: Out-swinging Corner Kicks
         :Str: Straight Corner Kicks
     - Outcomes ->
@@ -568,11 +479,11 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     # Squad Goal and Shot Creation
     """
     Goal And Shot Creation
-    - SCA --> 
+    - SCA -->
     (Shot-Creation Actions)
         :SCA: Shot-Creating Actions: The two offensive actions directly leading
-            to a shot, such as passes, dribbles and drawing fouls. 
-            Note: A single player can receive credit for multiple actions 
+            to a shot, such as passes, dribbles and drawing fouls.
+            Note: A single player can receive credit for multiple actions
             and the shot-taker can also receive credit.
         :SCA90: Shot Creating Action per 90'
     - SCA Types -->
@@ -584,9 +495,9 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Def: Defensive actions that lead to a shot attempt
     - GCA -->
     (Goal-Creating Actions)
-        :GCA: Goal-Creating Actions: The two offensive actions directly leading 
-            to a goal, such as passes, dribbles and drawing fouls. 
-            Note: A single player can receive credit for multiple actions 
+        :GCA: Goal-Creating Actions: The two offensive actions directly leading
+            to a goal, such as passes, dribbles and drawing fouls.
+            Note: A single player can receive credit for multiple actions
             and the shot-taker can also receive credit.
         :GCA90: Goal-Creating Actions per 90'
     - GCA Types -->
@@ -602,7 +513,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
     """
     Defensive Actions
     - Tackles -->
-        :Tkl: Number of players tackles 
+        :Tkl: Number of players tackles
         :Tkl": Tackles that led to possession
         :Def_3rd: Tackles in defensive third
         :Mid_3rd: Tackles in middle third
@@ -614,7 +525,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Past: Number of times dribbled past by an opposing player
     - Blocks -->
         :Blocks: Number of times the ball was block by standing in its path
-        :Sh: Number of blocked shots 
+        :Sh: Number of blocked shots
         :Pass: Number of blocked passes
     - Advanced_Defending -->
         :Int: Interceptions
@@ -649,7 +560,7 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :Prog: Progressive Passes Received: Completed passes that move the
             ball towards the opponent's goal at least 10 yards from its
             furthest point in the last six passes, or any completed pass
-            into the penalty area. 
+            into the penalty area.
             Excludes passes from the defending 40% of the pitch
     """
     squad_possession_stats = merge_dfs(leagues_list[18], leagues_list[19])
@@ -660,14 +571,14 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
         :CrdY: Number of Yellow Cards
         :CrdR: Number of Red Cards
         :2CrdY: Number of 2nd Yellow Cards
-        :Fls: Fouls Committed 
+        :Fls: Fouls Committed
         :Fld: Fouls Won
         :Off: Number Offsides
         :Crs: Number of Crosses
         :Int: Number of Interceptions
         :Tkl: Number of Tackles Won
         :PKwon: Penalty Kicks won
-        :PKcon: Penalty Kicks conceded 
+        :PKcon: Penalty Kicks conceded
         :OG: Own Goals
         :Recov: Number of loose balls recovered
     - Aerial_Duels
@@ -700,7 +611,6 @@ def get_single_season_league_data(country: str, tier: int, year: int) -> dict:
 def create_xlsx_from_dict(
     country: str, tier: int, season: str, data_dict: dict[str, pd.DataFrame]
 ) -> None:
-
     for data, df in data_dict.items():
         filename = f"{data}.xlsx"
         directory = Path(f"./frames/{country}/{tier}/{season}/")
@@ -708,14 +618,14 @@ def create_xlsx_from_dict(
         if not directory.exists():
             os.makedirs(directory)
         elif path.exists():
-            logger.warning(f"{filename} exists")
+            logger.warning("%s exists", filename)
             continue
-        logger.info(f"Creating {path}")
+        logger.info("Creating %s", path)
         header = df.columns
         df.to_excel(path, header=header, index=False)
 
 
-def year_at_season_st_list(year_range: str) -> list:
+def year_at_season_start_list(year_range: str) -> list:
     """Create list of years to feed the get_single_season_league_data."""
     if not isinstance(year_range, str):
         raise TypeError(f"{year_range} is not a string.")
@@ -729,13 +639,12 @@ def year_at_season_st_list(year_range: str) -> list:
         raise KeyError(
             "First year of a year range can't be greater or equal to the last year"
         )
-    year_at_season_st_list = [year for year in range(start_year, end_year)]
+    year_at_season_st_list = list(range(start_year, end_year))
 
     return year_at_season_st_list
 
 
 def create_multiple_season_dfs(country: str, tier: int, year_range: str) -> None:
-
     league_name = leagues[country][tier].get("name")
     files_to_check = [
         "standings_table.xlsx",
@@ -752,7 +661,7 @@ def create_multiple_season_dfs(country: str, tier: int, year_range: str) -> None
         "other.xlsx",
     ]
 
-    years = year_at_season_st_list(year_range)
+    years = year_at_season_start_list(year_range)
 
     for year in years:
         season = get_season_years(year)
@@ -765,7 +674,7 @@ def create_multiple_season_dfs(country: str, tier: int, year_range: str) -> None
         )
         if all_files_exist:
             logger.warning(
-                f"All the {league_name}'s data from the {season} season exist."
+                ("All the %s's data from the %s season exist.", league_name, season)
             )
             continue
         data_dict = get_single_season_league_data(country=country, tier=tier, year=year)

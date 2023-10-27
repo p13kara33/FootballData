@@ -4,17 +4,18 @@
 import pandas as pd
 
 from footballdata.library import (
-    year_at_season_st_list, 
+    year_at_season_start_list,
     get_season_years,
 )
 
 
 frames_dir = "../frames/{}/{}/{}/{}"
 
+
 def season_df_pairs(year_range: str, df_name: str) -> dict:
     """Gets a range of years and a df name and returns
     the dictionary of season and it's pairs
-        
+
         :country: Name of the country in Initial Case (the first letter Capital)
         :tier: The level of the league
         :year_range: The first year of the first season the last year of the last season
@@ -32,15 +33,15 @@ def season_df_pairs(year_range: str, df_name: str) -> dict:
                 "defensive_actions",
                 "possession",
                 "other"
-        
+
         Returns a dict: dict {"year_0-year_1": "df_name.xlsx", "year_1-year_2": "df_name.xlsx"}
     """
     # Creating the seasons' years one by one
     seasons = {}
-    for year in year_at_season_st_list(year_range=year_range):
+    for year in year_at_season_start_list(year_range=year_range):
         season = get_season_years(year)
         seasons[season] = f"{df_name}.xlsx"
-    
+
     return seasons
 
 
