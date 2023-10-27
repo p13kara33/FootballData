@@ -25,7 +25,6 @@ et-xmlfile==1.1.0
 executing==1.2.0
 fastjsonschema==2.16.2
 fonttools==4.38.0
--e git+https://github.com/p13kara33/FootballData.git@dd54d6901a0219f44985daef849199ffb4c055f9#egg=footballdata
 fqdn==1.5.1
 h11==0.14.0
 html5lib==1.1
