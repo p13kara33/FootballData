@@ -1,11 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 
-from settings import leagues
+from footballdata.settings import leagues
+
 
 # function to extract html document from given url
 def getHTMLdocument(url):
-
     # request for HTML document of given url
     response = requests.get(url)
 

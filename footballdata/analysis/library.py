@@ -3,11 +3,7 @@
 
 import pandas as pd
 
-from footballdata.library import (
-    year_at_season_start_list,
-    get_season_years,
-)
-
+from footballdata.library import get_season_years, year_at_season_start_list
 
 frames_dir = "../frames/{}/{}/{}/{}"
 

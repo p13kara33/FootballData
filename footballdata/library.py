@@ -1,15 +1,13 @@
 # Helper functions
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
-from footballdata.settings import (
-    leagues,
-    LEAGUE_URL,
-)
+from footballdata.settings import LEAGUE_URL, leagues
 
 # Create a logger object
 logger = logging.getLogger(__name__)

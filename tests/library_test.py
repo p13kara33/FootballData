@@ -1,10 +1,7 @@
-﻿import pytest
-import numpy as np
+﻿import numpy as np
+import pytest
 
-from footballdata.library import (
-    year_at_season_start_list,
-    get_season_years,
-)
+from footballdata.library import get_season_years, year_at_season_start_list
 
 
 class Test_get_season_years:
